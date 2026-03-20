@@ -5,20 +5,26 @@ public class PlayerController : MonoBehaviour
 {
     public float jumpForce;
     public float gravityModifier;
+
     public ParticleSystem explosionParticle;
     public ParticleSystem dirtParticle;
 
     public AudioClip jumpSfx;
     public AudioClip crashSfx;
 
+    public bool isDashing = false;
+    public bool gameOver = false;
+
     private Rigidbody rb;
     private InputAction jumpAction;
+    private InputAction dashAction;
+
     private bool isOnGround = true;
 
     private Animator playerAnim;
     private AudioSource playerAudio;
 
-    public bool gameOver = false;
+    private int jumpCount = 0;
 
     void Awake()
     {
@@ -33,6 +39,7 @@ public class PlayerController : MonoBehaviour
         Physics.gravity *= gravityModifier;
 
         jumpAction = InputSystem.actions.FindAction("Jump");
+        dashAction = InputSystem.actions.FindAction("Dash");
 
         gameOver = false;
     }
@@ -40,13 +47,27 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (jumpAction.triggered && isOnGround && !gameOver)
+        if (jumpAction.triggered && jumpCount < 2 && !gameOver)
         {
             rb.AddForce(jumpForce * Vector3.up, ForceMode.Impulse);
+
+            jumpCount++;
+
             isOnGround = false;
             playerAnim.SetTrigger("Jump_trig");
             dirtParticle.Stop();
             playerAudio.PlayOneShot(jumpSfx);
+        }
+
+        if (dashAction.IsPressed() && !gameOver)
+        {
+            isDashing = true;
+            playerAnim.SetFloat("Speed_f", 2.0f); 
+    }
+        else
+        {
+            isDashing = false;
+            playerAnim.SetFloat("Speed_f", 1.0f);
         }
     }
 
@@ -56,6 +77,7 @@ public class PlayerController : MonoBehaviour
         {
             isOnGround = true;
             dirtParticle.Play();
+            jumpCount = 0;
         }
         else if (collision.gameObject.CompareTag("Obstacle"))
         {
