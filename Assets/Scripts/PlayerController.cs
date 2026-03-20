@@ -15,6 +15,8 @@ public class PlayerController : MonoBehaviour
     public bool isDashing = false;
     public bool gameOver = false;
 
+    public int health = 3;
+
     private Rigidbody rb;
     private InputAction jumpAction;
     private InputAction dashAction;
@@ -25,27 +27,34 @@ public class PlayerController : MonoBehaviour
     private AudioSource playerAudio;
 
     private int jumpCount = 0;
+    
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         playerAnim = GetComponent<Animator>();
         playerAudio = GetComponent<AudioSource>();
+
+        jumpAction = InputSystem.actions.FindAction("Jump");
+        dashAction = InputSystem.actions.FindAction("Dash");
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         Physics.gravity *= gravityModifier;
-
-        jumpAction = InputSystem.actions.FindAction("Jump");
-        dashAction = InputSystem.actions.FindAction("Dash");
-
         gameOver = false;
     }
 
     // Update is called once per frame
     void Update()
+    {
+        if (gameOver) return;
+
+        HandleJump();
+        HandleDash();
+    }
+    void HandleJump()
     {
         if (jumpAction.triggered && jumpCount < 2 && !gameOver)
         {
@@ -58,12 +67,15 @@ public class PlayerController : MonoBehaviour
             dirtParticle.Stop();
             playerAudio.PlayOneShot(jumpSfx);
         }
+    }
 
+    void HandleDash()
+    {
         if (dashAction.IsPressed() && !gameOver)
         {
             isDashing = true;
-            playerAnim.SetFloat("Speed_f", 2.0f); 
-    }
+            playerAnim.SetFloat("Speed_f", 2.0f);
+        }
         else
         {
             isDashing = false;
@@ -76,18 +88,27 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isOnGround = true;
-            dirtParticle.Play();
             jumpCount = 0;
+            if (!gameOver) dirtParticle.Play();
+
         }
-        else if (collision.gameObject.CompareTag("Obstacle"))
+        else if (collision.gameObject.CompareTag("Obstacle") && !gameOver)
         {
-            Debug.Log("Game Over!");
-            gameOver = true;
-            playerAnim.SetBool("Death_b", true);
-            playerAnim.SetInteger("DeathType_int", 1);
+            explosionParticle.Clear();
             explosionParticle.Play();
-            dirtParticle.Stop();
             playerAudio.PlayOneShot(crashSfx);
+            health--;
+
+            Destroy(collision.gameObject);
+
+            if (health <= 0)
+            {
+                gameOver = true;
+                playerAnim.SetBool("Death_b", true);
+                playerAnim.SetInteger("DeathType_int", 1);
+                dirtParticle.Stop();
+                explosionParticle.Play();
+            }
         }
     }
 
