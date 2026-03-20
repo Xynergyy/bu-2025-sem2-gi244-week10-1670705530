@@ -18,8 +18,7 @@ public class SpawnManager : MonoBehaviour
     }
 
     void SpawnObstacle()
-    {
-        Debug.Log("Function Spawn is calling!");
+    { 
         int obstacleIndex = Random.Range(0, obstaclePrefab.Length);
         Instantiate(obstaclePrefab[obstacleIndex], spawnPos, obstaclePrefab[obstacleIndex].transform.rotation);
         
